@@ -6,17 +6,19 @@
         {
 
             string[] lines = System.IO.File.ReadAllLines(@".\input.txt");
-            int[] xs = lines.Select(x => Convert.ToInt32(x)).ToArray();
-            int previous = xs[0] + xs[1] + xs[2];
-            int count = 0;
-
-            for (int i = 3; i < xs.Length; i++)
+            int forward = 0;
+            int depth = 0;
+            foreach (string line in lines)
             {
-                int sum = xs[i - 2] + xs[i - 1] + xs[i];
-                if (sum > previous) count++;
-                previous = sum;
+                int amount = Convert.ToInt32(line.Split(" ")[1]);
+                if (line[0] == "f"[0]) forward += amount;
+
+                if (line[0] == "u"[0])depth -= amount;
+                
+                if (line[0] == "d"[0])depth += amount;
+                
             }
-            Console.Write(count);
+            Console.Write(forward * depth);
         }
 
     }
