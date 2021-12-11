@@ -5,23 +5,44 @@
         static void Main(string[] args)
         {
 
-            string[] lines = System.IO.File.ReadAllLines(@".\input.txt");
-            int forward = 0;
-            int depth = 0;
-            int aim = 0;
+            var lines = System.IO.File.ReadAllLines(@".\input.txt");
+            var len = lines[0].Length;
+            int[] zeros = new int[len];
+            int[] ones = new int[len];
             foreach (string line in lines)
             {
-                int amount = Convert.ToInt32(line.Split(" ")[1]);
-                if (line[0] == "f"[0])
+                int num = Convert.ToInt32(line, fromBase: 2);
+                for (int i = 0; i < len; i++)
                 {
-                    forward += amount;
-                    depth += aim * amount;
+                    if ((num >> (len - 1 - i) & 1) == 1)
+                    {
+                        ones[i]++;
+                    }
+                    else
+                    {
+                        zeros[i]++;
+                    }
                 }
-                if (line[0] == "u"[0]) aim -= amount;
-                if (line[0] == "d"[0]) aim += amount;
             }
-            Console.Write(forward * depth);
-        }
 
+            int gamma = 0;
+            int epsilon = 0;
+            for (int i = 0; i < len; i++)
+            {
+                int delta = Convert.ToInt32(Math.Pow(2, (len - 1 - i)));
+                if (ones[i] > zeros[i])
+                {
+                    gamma += delta;
+                }
+                else
+                {
+                    epsilon += delta;
+                }
+            }
+            
+            Console.WriteLine(gamma);
+            Console.WriteLine(epsilon);
+            Console.WriteLine(gamma * epsilon);
+        }
     }
 }
