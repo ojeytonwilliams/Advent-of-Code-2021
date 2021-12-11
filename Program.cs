@@ -20,24 +20,38 @@
             }
 
             var boards = boardStack.ToArray();
-            
+
+            int remainingBoards = boards.Length;
+            HashSet<int> winners = new();
             foreach (int n in numbers)
             {
-                foreach (var board in boards)
+                for (int i = 0; i < boards.Length; i++)
                 {
+                    if (winners.Contains(i)) continue;
+                    var board = boards[i];
                     markPosition(board, n);
-                    if(isWinner(board)) {
-                        Console.WriteLine(getScore(board, n));
-                        Environment.Exit(0);
+                    if (isWinner(board))
+                    {
+                        winners.Add(i);
+                        remainingBoards--;
+                        if (remainingBoards == 0)
+                        {
+                            Console.WriteLine(getScore(board, n));
+                            Environment.Exit(0);
+                        }
                     }
                 }
             }
-            
-            int getScore(int[][] board, int num) {
+
+            int getScore(int[][] board, int num)
+            {
                 int score = 0;
-                foreach(var row in board) {
-                    foreach(int n in row) {
-                        if(n > 0) {
+                foreach (var row in board)
+                {
+                    foreach (int n in row)
+                    {
+                        if (n > 0)
+                        {
                             score += n;
                         }
                     }
@@ -103,16 +117,6 @@
                 return false;
             }
 
-            // (int, int) findPosition(int[][] board, int n) {
-            //     for (int i = 0; i < board.Length; i++)
-            //     {
-            //         var id = Array.IndexOf(board[i], n);
-            //         if(id > -1) {
-            //             return (i, id);
-            //         }
-            //     }
-            //     return (-1, -1);
-            // }
 
 
             int[][] parseBoards(IEnumerator<string> linesEnumerator)
