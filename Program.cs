@@ -7,42 +7,64 @@
 
             var lines = System.IO.File.ReadAllLines(@".\input.txt");
             var len = lines[0].Length;
-            int[] zeros = new int[len];
-            int[] ones = new int[len];
-            foreach (string line in lines)
+
+            bool isOneMostCommon(int[] lines, int position)
             {
-                int num = Convert.ToInt32(line, fromBase: 2);
-                for (int i = 0; i < len; i++)
+                var (zero, one) = countBits(lines, position);
+                return one >= zero;
+            }
+
+            int[] filtered = lines.Select(x => Convert.ToInt32(x, fromBase: 2)).ToArray();
+            for (int i = len - 1; i >= 0; i--)
+            {
+                filtered = filterByRequiredBit(filtered, i, isOneMostCommon);
+            }
+
+            int oxygen = filtered[0];
+
+            bool isOneLeastCommon(int[] lines, int position) => !isOneMostCommon(lines, position);
+
+            filtered = lines.Select(x => Convert.ToInt32(x, fromBase: 2)).ToArray();
+            for (int i = len - 1; i >= 0; i--)
+            {
+                filtered = filterByRequiredBit(filtered, i, isOneLeastCommon);
+            }
+
+            int cO2 = filtered[0];
+
+            Console.WriteLine(oxygen * cO2);
+
+
+            bool hasOne(int num, int position)
+            {
+                return (num >> (position) & 1) == 1;
+            }
+
+            (int zero, int one) countBits(int[] lines, int n)
+            {
+                int zero = 0;
+                int one = 0;
+                foreach (var num in lines)
                 {
-                    if ((num >> (len - 1 - i) & 1) == 1)
+                    if (hasOne(num, n))
                     {
-                        ones[i]++;
+                        one++;
                     }
                     else
                     {
-                        zeros[i]++;
+                        zero++;
                     }
                 }
+                return (zero, one);
             }
 
-            int gamma = 0;
-            int epsilon = 0;
-            for (int i = 0; i < len; i++)
+            int[] filterByRequiredBit(int[] lines, int n, Func<int[], int, bool> findFilterBit)
             {
-                int delta = Convert.ToInt32(Math.Pow(2, (len - 1 - i)));
-                if (ones[i] > zeros[i])
-                {
-                    gamma += delta;
-                }
-                else
-                {
-                    epsilon += delta;
-                }
-            }
-            
-            Console.WriteLine(gamma);
-            Console.WriteLine(epsilon);
-            Console.WriteLine(gamma * epsilon);
+                if (lines.Length == 1) return lines;
+                Func<int, int,bool> predicate = findFilterBit(lines, n) ? (x, n) => hasOne(x, n) : (x, n) => !hasOne(x, n);
+                return lines.Where(x => predicate(x, n)).ToArray();
         }
+
     }
+}
 }
