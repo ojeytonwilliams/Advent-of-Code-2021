@@ -1,134 +1,281 @@
 ﻿namespace HelloWorld
 {
+    using static Utils.Format;
     class Program
     {
+
+
+        class Vector
+        {
+            // NOTE: Yeah, we could easily have kept the positions abstract and
+            // just inferred if a given point was on the vector line or not.
+            // This is silly, but here we are!
+            public Point[] Positions { get; }
+
+            public Point[] EndPoints()
+            {
+                return new Point[] { Positions.First(), Positions.Last() };
+            }
+
+            public Vector(Point[] points)
+            {
+                Positions = points;
+            }
+        }
+
+        class Point
+        {
+            public int X { get; }
+            public int Y { get; }
+
+            public Point(int[] coords)
+            {
+                X = coords[0];
+                Y = coords[1];
+            }
+
+            public Point(int x, int y)
+            {
+                X = x;
+                Y = y;
+            }
+        }
+
         static void Main(string[] args)
         {
 
             var lines = System.IO.File.ReadAllLines(@".\input.txt");
-            int[] numbers = lines[0].Split(",").Select(x => Convert.ToInt32(x)).ToArray();
-            string[] boardData = new string[
-                lines.Length - 1
-            ];
-            Array.Copy(lines, 1, boardData, 0, lines.Length - 1);
-            IEnumerator<string> lineEnumerator = boardData.AsEnumerable().GetEnumerator();
-            var boardStack = new Stack<int[][]>();
+            string[][] vectorsRaw = lines.Select(x => x.Split("->", StringSplitOptions.TrimEntries)).ToArray();
 
-            while (lineEnumerator.MoveNext())
+            Vector[] vectors = vectorsRaw.Select(x => parseRawVector(x)).Where(v => v != null).ToArray()!;
+
+            (int width, int height) = getDimensions(vectors);
+
+            int[][] board = new int[width + 1][];
+            for (int i = 0; i < board.Length; i++)
             {
-                boardStack.Push(parseBoards(lineEnumerator));
+                board[i] = new int[height + 1];
             }
 
-            var boards = boardStack.ToArray();
-
-            int remainingBoards = boards.Length;
-            HashSet<int> winners = new();
-            foreach (int n in numbers)
+            foreach (var v in vectors)
             {
-                for (int i = 0; i < boards.Length; i++)
+                addPoints(board, v);
+            }
+
+            int count = 0;
+
+            foreach (var column in board)
+            {
+                foreach (var x in column)
                 {
-                    if (winners.Contains(i)) continue;
-                    var board = boards[i];
-                    markPosition(board, n);
-                    if (isWinner(board))
-                    {
-                        winners.Add(i);
-                        remainingBoards--;
-                        if (remainingBoards == 0)
-                        {
-                            Console.WriteLine(getScore(board, n));
-                            Environment.Exit(0);
-                        }
-                    }
+                    if (x >= 2) count++;
                 }
             }
 
-            int getScore(int[][] board, int num)
-            {
-                int score = 0;
-                foreach (var row in board)
-                {
-                    foreach (int n in row)
-                    {
-                        if (n > 0)
-                        {
-                            score += n;
-                        }
-                    }
-                }
-                return score * num;
-            }
+            Console.WriteLine(count);
 
-            void prettyPrint<T>(T[][] board)
+            void addPoints(int[][] board, Vector vector)
             {
-                foreach (var item in board)
+                foreach (var point in vector.Positions)
                 {
-                    Console.WriteLine(String.Join(",", item));
+                    board[point.X][point.Y]++;
                 }
             }
 
 
+            Console.WriteLine($"{width}, {height}");
 
-            void markPosition(int[][] board, int n)
+            (int, int) getDimensions(Vector[] vectors)
             {
-                for (int i = 0; i < board.Length; i++)
+                int maxHeight = 0, maxWidth = 0;
+                foreach (var v in vectors)
                 {
-                    var id = Array.IndexOf(board[i], n);
-                    if (id > -1)
-                    {
-                        board[i][id] = -1;
-                    }
+                    var endPoint = v.EndPoints().Last();
+                    int width = endPoint.X;
+                    int height = endPoint.Y;
+                    maxWidth = width > maxWidth ? width : maxWidth;
+                    maxHeight = height > maxHeight ? height : maxHeight;
                 }
+                return (maxWidth, maxHeight);
             }
 
-            bool isWinner(int[][] board)
+            Vector? parseRawVector(string[] xs)
             {
-                if (hasFullRow(board)) return true;
-                if (hasFullColumn(board)) return true;
-                return false;
+                Point start = parsePosition(xs[0]);
+                Point end = parsePosition(xs[1]);
+                if (isHorizontal(start, end)) return getHorizontalVector(start, end);
+                if (isVertical(start, end)) return getVerticalVector(start, end);
+                return null;
             }
 
-            bool hasFullRow(int[][] board)
+
+
+            Point parsePosition(string s)
             {
-                foreach (var item in board)
+                var coords = s.Split(",").Select(x => Convert.ToInt32(x)).ToArray();
+                return new Point(coords);
+            }
+
+            bool isHorizontal(Point start, Point end)
+            {
+                return start.Y == end.Y;
+            }
+
+            bool isVertical(Point start, Point end)
+            {
+                return start.X == end.X;
+            }
+
+            Vector getHorizontalVector(Point start, Point end)
+            {
+                int y = start.Y;
+                int x0 = start.X < end.X ? start.X : end.X;
+                int x1 = start.X < end.X ? end.X : start.X;
+                Point[] points = new Point[x1 - x0 + 1];
+                for (int i = 0; i < points.Length; i++)
                 {
-                    if (Array.TrueForAll(item, (int x) => x == -1))
-                    {
-                        return true;
-                    }
+                    points[i] = new Point(x0 + i, y);
                 }
-                return false;
+                return new Vector(points);
             }
 
-            bool hasFullColumn(int[][] board)
+            Vector getVerticalVector(Point start, Point end)
             {
-                for (int col = 0; col < board.Length; col++)
+                int x = start.X;
+                int y0 = start.Y < end.Y ? start.Y : end.Y;
+                int y1 = start.Y < end.Y ? end.Y : start.Y;
+                Point[] points = new Point[y1 - y0 + 1];
+                for (int i = 0; i < points.Length; i++)
                 {
-                    bool full = true;
-                    for (int row = 0; row < board.Length; row++)
-                    {
-                        if (board[row][col] > -1)
-                        {
-                            full = false;
-                        }
-                    }
-                    if (full) return true;
+                    points[i] = new Point(x, y0 + i);
                 }
-                return false;
+                return new Vector(points);
             }
 
+            // PrettyPrint(vectorsRaw);
+
+            //     string[] boardData = new string[
+            //         lines.Length - 1
+            //     ];
+            //     Array.Copy(lines, 1, boardData, 0, lines.Length - 1);
+            //     IEnumerator<string> lineEnumerator = boardData.AsEnumerable().GetEnumerator();
+            //     var boardStack = new Stack<int[][]>();
+
+            //     while (lineEnumerator.MoveNext())
+            //     {
+            //         boardStack.Push(parseBoards(lineEnumerator));
+            //     }
+
+            //     var boards = boardStack.ToArray();
+
+            //     int remainingBoards = boards.Length;
+            //     HashSet<int> winners = new();
+            //     foreach (int n in numbers)
+            //     {
+            //         for (int i = 0; i < boards.Length; i++)
+            //         {
+            //             if (winners.Contains(i)) continue;
+            //             var board = boards[i];
+            //             markPosition(board, n);
+            //             if (isWinner(board))
+            //             {
+            //                 winners.Add(i);
+            //                 remainingBoards--;
+            //                 if (remainingBoards == 0)
+            //                 {
+            //                     Console.WriteLine(getScore(board, n));
+            //                     Environment.Exit(0);
+            //                 }
+            //             }
+            //         }
+            //     }
+
+            //     int getScore(int[][] board, int num)
+            //     {
+            //         int score = 0;
+            //         foreach (var row in board)
+            //         {
+            //             foreach (int n in row)
+            //             {
+            //                 if (n > 0)
+            //                 {
+            //                     score += n;
+            //                 }
+            //             }
+            //         }
+            //         return score * num;
+            //     }
+
+            //     void prettyPrint<T>(T[][] board)
+            //     {
+            //         foreach (var item in board)
+            //         {
+            //             Console.WriteLine(String.Join(",", item));
+            //         }
+            //     }
 
 
-            int[][] parseBoards(IEnumerator<string> linesEnumerator)
-            {
-                int[][] board = new int[5][];
-                for (int i = 0; i < 5 && linesEnumerator.MoveNext(); i++)
-                {
-                    var strings = linesEnumerator.Current.Split(" ", StringSplitOptions.RemoveEmptyEntries);
-                    board[i] = strings.Select(x => Convert.ToInt32(x)).ToArray();
-                }
-                return board;
-            }
+
+            //     void markPosition(int[][] board, int n)
+            //     {
+            //         for (int i = 0; i < board.Length; i++)
+            //         {
+            //             var id = Array.IndexOf(board[i], n);
+            //             if (id > -1)
+            //             {
+            //                 board[i][id] = -1;
+            //             }
+            //         }
+            //     }
+
+            //     bool isWinner(int[][] board)
+            //     {
+            //         if (hasFullRow(board)) return true;
+            //         if (hasFullColumn(board)) return true;
+            //         return false;
+            //     }
+
+            //     bool hasFullRow(int[][] board)
+            //     {
+            //         foreach (var item in board)
+            //         {
+            //             if (Array.TrueForAll(item, (int x) => x == -1))
+            //             {
+            //                 return true;
+            //             }
+            //         }
+            //         return false;
+            //     }
+
+            //     bool hasFullColumn(int[][] board)
+            //     {
+            //         for (int col = 0; col < board.Length; col++)
+            //         {
+            //             bool full = true;
+            //             for (int row = 0; row < board.Length; row++)
+            //             {
+            //                 if (board[row][col] > -1)
+            //                 {
+            //                     full = false;
+            //                 }
+            //             }
+            //             if (full) return true;
+            //         }
+            //         return false;
+            //     }
+
+
+
+            //     int[][] parseBoards(IEnumerator<string> linesEnumerator)
+            //     {
+            //         int[][] board = new int[5][];
+            //         for (int i = 0; i < 5 && linesEnumerator.MoveNext(); i++)
+            //         {
+            //             var strings = linesEnumerator.Current.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+            //             board[i] = strings.Select(x => Convert.ToInt32(x)).ToArray();
+            //         }
+            //         return board;
+            //     }
 
         }
     }
