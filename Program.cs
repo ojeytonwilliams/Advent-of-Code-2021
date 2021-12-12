@@ -82,9 +82,6 @@
                 }
             }
 
-
-            Console.WriteLine($"{width}, {height}");
-
             (int, int) getDimensions(Vector[] vectors)
             {
                 int maxHeight = 0, maxWidth = 0;
@@ -105,7 +102,10 @@
                 Point end = parsePosition(xs[1]);
                 if (isHorizontal(start, end)) return getHorizontalVector(start, end);
                 if (isVertical(start, end)) return getVerticalVector(start, end);
-                return null;
+                if (isUpDiag(start, end)) return getUpDiagVector(start, end);
+                // by the rules of the puzzle, there are only 4 possibilities,
+                // leaving this one
+                return getDownDiagVector(start, end);
             }
 
 
@@ -125,6 +125,35 @@
             {
                 return start.X == end.X;
             }
+
+            // Since the coordinates have the top left at [0, 0], up diags
+            // go up and right.  Thus, any given point must either be the
+            // bottom left of the diagonal or the top right
+            bool isUpDiag(Point start, Point end)
+            {
+                return isStartBottomLeft(start, end) || isStartTopRight(start, end);
+            }
+
+            bool isStartBottomLeft(Point start, Point end)
+            {
+                return start.Y > end.Y && start.X < end.X;
+            }
+
+            bool isStartTopRight(Point start, Point end)
+            {
+                return start.Y < end.Y && start.X > end.X;
+            }
+
+            bool isStartBottomRight(Point start, Point end)
+            {
+                return start.Y > end.Y && start.X > end.X;
+            }
+
+            bool isStartTopLeft(Point start, Point end)
+            {
+                return start.Y < end.Y && start.X < end.X;
+            }
+
 
             Vector getHorizontalVector(Point start, Point end)
             {
@@ -152,131 +181,50 @@
                 return new Vector(points);
             }
 
-            // PrettyPrint(vectorsRaw);
+            // starts top left (min X, min Y)
+            Vector getDownDiagVector(Point start, Point end)
+            {
+                Point bottomRight = isStartBottomRight(start, end) ? start : end;
+                Point topLeft =  isStartBottomRight(start, end) ? end : end;
+                if (isStartBottomRight(start, end))
+                {
+                    bottomRight = start;
+                    topLeft = end;
+                }
+                else
+                {
+                    bottomRight = end;
+                    topLeft = start;
+                }
+                int x0 = topLeft.X;
+                int x1 = bottomRight.X;
+                int y0 = topLeft.Y;
+                int y1 = bottomRight.Y;
+                Point[] points = new Point[x1 - x0 + 1];
 
-            //     string[] boardData = new string[
-            //         lines.Length - 1
-            //     ];
-            //     Array.Copy(lines, 1, boardData, 0, lines.Length - 1);
-            //     IEnumerator<string> lineEnumerator = boardData.AsEnumerable().GetEnumerator();
-            //     var boardStack = new Stack<int[][]>();
+                for (int i = 0; i < points.Length; i++)
+                {
+                    points[i] = new Point(x0 + i, y0 + i);
+                }
+                return new Vector(points);
+            }
 
-            //     while (lineEnumerator.MoveNext())
-            //     {
-            //         boardStack.Push(parseBoards(lineEnumerator));
-            //     }
+            // starts bottom left(min X, max Y)
+            Vector getUpDiagVector(Point start, Point end)
+            {
+                Point bottomLeft = isStartBottomLeft(start, end) ? start : end;
+                Point topRight = isStartBottomLeft(start, end) ? end : start;
+                int x0 = bottomLeft.X;
+                int x1 = topRight.X;
+                int y0 = bottomLeft.Y;
 
-            //     var boards = boardStack.ToArray();
-
-            //     int remainingBoards = boards.Length;
-            //     HashSet<int> winners = new();
-            //     foreach (int n in numbers)
-            //     {
-            //         for (int i = 0; i < boards.Length; i++)
-            //         {
-            //             if (winners.Contains(i)) continue;
-            //             var board = boards[i];
-            //             markPosition(board, n);
-            //             if (isWinner(board))
-            //             {
-            //                 winners.Add(i);
-            //                 remainingBoards--;
-            //                 if (remainingBoards == 0)
-            //                 {
-            //                     Console.WriteLine(getScore(board, n));
-            //                     Environment.Exit(0);
-            //                 }
-            //             }
-            //         }
-            //     }
-
-            //     int getScore(int[][] board, int num)
-            //     {
-            //         int score = 0;
-            //         foreach (var row in board)
-            //         {
-            //             foreach (int n in row)
-            //             {
-            //                 if (n > 0)
-            //                 {
-            //                     score += n;
-            //                 }
-            //             }
-            //         }
-            //         return score * num;
-            //     }
-
-            //     void prettyPrint<T>(T[][] board)
-            //     {
-            //         foreach (var item in board)
-            //         {
-            //             Console.WriteLine(String.Join(",", item));
-            //         }
-            //     }
-
-
-
-            //     void markPosition(int[][] board, int n)
-            //     {
-            //         for (int i = 0; i < board.Length; i++)
-            //         {
-            //             var id = Array.IndexOf(board[i], n);
-            //             if (id > -1)
-            //             {
-            //                 board[i][id] = -1;
-            //             }
-            //         }
-            //     }
-
-            //     bool isWinner(int[][] board)
-            //     {
-            //         if (hasFullRow(board)) return true;
-            //         if (hasFullColumn(board)) return true;
-            //         return false;
-            //     }
-
-            //     bool hasFullRow(int[][] board)
-            //     {
-            //         foreach (var item in board)
-            //         {
-            //             if (Array.TrueForAll(item, (int x) => x == -1))
-            //             {
-            //                 return true;
-            //             }
-            //         }
-            //         return false;
-            //     }
-
-            //     bool hasFullColumn(int[][] board)
-            //     {
-            //         for (int col = 0; col < board.Length; col++)
-            //         {
-            //             bool full = true;
-            //             for (int row = 0; row < board.Length; row++)
-            //             {
-            //                 if (board[row][col] > -1)
-            //                 {
-            //                     full = false;
-            //                 }
-            //             }
-            //             if (full) return true;
-            //         }
-            //         return false;
-            //     }
-
-
-
-            //     int[][] parseBoards(IEnumerator<string> linesEnumerator)
-            //     {
-            //         int[][] board = new int[5][];
-            //         for (int i = 0; i < 5 && linesEnumerator.MoveNext(); i++)
-            //         {
-            //             var strings = linesEnumerator.Current.Split(" ", StringSplitOptions.RemoveEmptyEntries);
-            //             board[i] = strings.Select(x => Convert.ToInt32(x)).ToArray();
-            //         }
-            //         return board;
-            //     }
-
+                Point[] points = new Point[x1 - x0 + 1];
+                for (int i = 0; i < points.Length; i++)
+                {
+                    points[i] = new Point(x0 + i, y0 - i);
+                }
+                return new Vector(points);
+            }
         }
     }
 }
